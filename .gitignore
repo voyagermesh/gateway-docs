@@ -1,0 +1,13 @@
+/.firebase
+/content/docs
+/node_modules
+/repos
+/resources
+.sass-cache
+.DS_Store
+.hugo_build.lock
+node_modules
+.temp
+.cache
+.vitepress/cache
+.vitepress/dist
