@@ -1,0 +1,83 @@
+apiVersion: kubedb.com/v1alpha2
+kind: MongoDB
+metadata:
+  name: mongo
+  namespace: default
+spec:
+  version: "4.1.13-v1"
+  sslMode: requireSSL
+  tls:
+    issuerRef:
+      apiGroup: "cert-manager.io"
+      kind: Issuer
+      name: db-issuer
+  storage:
+    storageClassName: "standard"
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+---
+
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: BackendTLSPolicy
+metadata:
+  name: mongo-backendtls
+  namespace: default
+spec:
+  targetRef: 
+    group: ''
+    kind: Service
+    name: mongo
+    namespace: default
+  tls: 
+    caCertRefs:
+    - name: mongo-client-cert
+      group: ''
+      kind: Secret
+    hostname: mongo
+
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: mg-gw
+  namespace: default
+  annotations: 
+    'port-mapping.gateway.voyagermesh.com/10002' : '30005'
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: mg-lis 
+    protocol: TLS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: mongo-server-cert
+          namespace: default
+    port: 10002
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: MongoDBRoute
+---
+apiVersion: gateway.voyagermesh.com/v1alpha1
+kind: MongoDBRoute
+metadata:
+  name: mg-route
+  namespace: default 
+spec:
+  parentRefs:
+  - name: mg-gw
+    sectionName: mg-lis
+  rules:
+  - backendRefs:
+    - name: mongo
+      port: 27017
+
+
+
+#mongosh --tls --tlsCAFile ./ca.crt --tlsCertificateKeyFile ./client.pem admin --host 172.104.37.105 --port 10002 --authenticationMechanism MONGODB-X509 --authenticationDatabase='$external' --quiet
+
+#db.runCommand({connectionStatus: 1}).authInfo.authenticatedUsers

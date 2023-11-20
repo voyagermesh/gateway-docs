@@ -1,0 +1,104 @@
+apiVersion: kubedb.com/v1alpha2
+kind: Elasticsearch
+metadata:
+  name: esearch
+  namespace: default
+spec:
+  enableSSL: true 
+  version: xpack-8.8.0
+  storageType: Durable
+  topology:
+    master:
+      replicas: 1
+      storage:
+        storageClassName: "standard"
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1.5Gi
+    data:
+      replicas: 2
+      storage:
+        storageClassName: "standard"
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1.5Gi
+    ingest:
+      replicas: 1
+      storage:
+        storageClassName: "standard"
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1.5Gi
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: BackendTLSPolicy
+metadata:
+  name: esearch-backendtls
+  namespace: default
+  # annotations:
+  #   "gateway.voyagermesh.com/cert-secret-ref" : "esr-client-cert"
+spec:
+  targetRef: 
+    group: ''
+    kind: Service
+    name: esearch
+    namespace: default
+  tls:
+    caCertRefs:
+    - name: esearch-client-cert
+      group: ''
+      kind: Secret
+    hostname: esearch
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: es-gw
+  namespace: default
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: es-lis # route in same namespace
+    protocol: HTTPS
+    port: 10001
+    tls:
+      certificateRefs:
+      - kind: Secret
+        group: ""
+        name: esearch-http-cert
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: es-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: es-gw
+    sectionName: es-lis
+  rules:
+  - backendRefs:
+    - name: esearch
+      port: 9200
+
+
+
+
+#GET inserted data: curl -XGET -k --user 'elastic:zY2qEcGEeTZRlETQ' "https://localhost:8000/info/_search?pretty"
+
+#INSERT data: curl -XPOST -k --user 'elastic:zY2qEcGEeTZRlETQ' "https://localhost:8000/info/_doc?pretty" -H 'Content-Type: application/json' -d'
+            #  {
+            #      "Company": "AppsCode Inc",
+            #      "Product": "KubeDB"
+            #  }
+            #  '

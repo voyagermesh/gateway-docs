@@ -1,0 +1,88 @@
+apiVersion: kubedb.com/v1alpha2
+kind: Postgres
+metadata:
+  name: pg
+  namespace: default
+spec:
+  version: '13.2'
+  replicas: 1
+  standbyMode: Hot
+  # sslMode: verify-full
+  storageType: Durable
+  tls:
+    issuerRef:
+      apiGroup: cert-manager.io
+      name: db-issuer
+      kind: Issuer
+    certificates:
+    - alias: server
+      subject:
+        organizations:
+        - kubedb:server
+      dnsNames:
+      - localhost
+      ipAddresses:
+      - "127.0.0.1"
+  storage:
+    storageClassName: "standard"
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  terminationPolicy: WipeOut
+---      
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: BackendTLSPolicy
+metadata:
+  name: pg-backendtls
+  namespace: default
+spec:
+  targetRef: 
+    group: ''
+    kind: Service
+    name: pg
+    namespace: default
+  tls: 
+    caCertRefs:
+    - name: pg-client-cert
+      group: ''
+      kind: Secret
+    hostname: pg
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: pg-gw
+  namespace: default
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: pg-lis 
+    protocol: TLS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: pg-server-cert
+          namespace: default
+    port: 10004
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: PostgresRoute
+---
+apiVersion: gateway.voyagermesh.com/v1alpha1
+kind: PostgresRoute
+metadata:
+  name: pg-route
+  namespace: default 
+spec:
+  parentRefs:
+  - name: pg-gw
+    sectionName: pg-lis
+  rules:
+  - backendRefs:
+    - name: pg
+      port: 5432
+      namespace: default
+

@@ -1,0 +1,85 @@
+apiVersion: kubedb.com/v1alpha2
+kind: MySQL
+metadata:
+  name: mysql
+  namespace: default
+spec:
+  version: "8.0.31"
+  storageType: Durable
+  storage:
+    storageClassName: "standard"
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  requireSSL: true
+  tls:
+    issuerRef:
+      apiGroup: cert-manager.io
+      kind: Issuer
+      name: db-issuer
+    certificates:
+    - alias: server
+      subject:
+        organizations:
+        - kubedb:server
+      dnsNames:
+      - localhost
+      ipAddresses:
+      - "127.0.0.1"
+  terminationPolicy: WipeOut
+
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: BackendTLSPolicy
+metadata:
+  name: mysql-backendtls
+  namespace: default
+spec:
+  targetRef: 
+    group: ''
+    kind: Service
+    name: mysql
+    namespace: default
+  tls: 
+    caCertRefs:
+    - name: mysql-client-cert
+      group: ''
+      kind: Secret
+    hostname: mysql
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: my-gw #mysql-gw name not accepted 
+  namespace: envoy-pg
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: my-lis 
+    protocol: TLS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: mysql-server-cert
+          namespace: default
+    port: 10003
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: MySQLRoute
+---
+apiVersion: gateway.voyagermesh.com/v1alpha1
+kind: MySQLRoute
+metadata:
+  name: my-route
+  namespace: envoy-pg
+spec:
+  parentRefs:
+  - name: my-gw
+    sectionName: my-lis
+  rules:
+  - backendRefs:
+    - name: mysql
+      port: 3306
