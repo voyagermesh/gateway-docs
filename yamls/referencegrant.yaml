@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: sample-refg
+  namespace: sample-ns # namespace should be same as the object refered in the 'to' section  
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: BackendTLSPolicy
+    namespace: test
+  to:
+  - group: ""
+    kind: Service
+    name: https-server
+
+# possible combinations for regerence grants : 
+
+# from              |   to
+# ------------------------------------------ 
+# gateway           |  route,secret(tls)
+# route             |  service 
+# backendtlspolicy  |  service
+
+# referencegrant should be respected when two resources are in different namespace and one is referred from other 

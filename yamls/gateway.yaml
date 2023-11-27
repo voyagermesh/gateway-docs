@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: sample-tls-gateway
+  namespace: sample-ns
+  annotations: 
+    'port-mapping.gateway.voyagermesh.com/10002' : '30005'
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: sample-tls-lis 
+    protocol: TLS # client<->gateway connection will be tls secured  
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: sample-server-cert
+          namespace: sample-ns # reference grant should be created for different namespace
+    port: 10002
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: MySQLRoute
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: sample-tcp-gateway
+  namespace: sample-ns
+  annotations: 
+    'port-mapping.gateway.voyagermesh.com/10002' : '30005'
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: sample-tcp-lis 
+    protocol: TCP # client<->gateway connection will be plain tcp 
+    port: 10002
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: MySQLRoute
