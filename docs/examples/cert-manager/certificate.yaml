@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: example
+  namespace: default
+spec:
+  secretName: example-tls
+  duration: 24h
+  renewBefore: 12h
+  dnsNames:
+    - foo.example.com
+    - bar.example.com
+  issuerRef:
+    name: my-internal-ca
+    kind: Issuer
