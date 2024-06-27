@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: pg-gw
+  namespace: ace
+spec:
+  gatewayClassName: ace
+  listeners:
+  - name: pg-lis 
+    protocol: TCP
+    # tls:
+    #   mode: Terminate
+    #   certificateRefs:
+    #     - name: pg-server-cert
+    #       namespace: default
+    port: 10004
+    allowedRoutes:
+      kinds:
+        - group: gateway.voyagermesh.com
+          kind: PostgresRoute

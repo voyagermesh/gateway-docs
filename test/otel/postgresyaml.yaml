@@ -1,0 +1,31 @@
+apiVersion: kubedb.com/v1alpha2
+
+kind: Postgres
+
+metadata:
+
+  name: pg-demo
+
+  namespace: ace
+
+spec:
+
+  storage:
+
+    accessModes:
+
+    - ReadWriteOnce
+
+    resources:
+
+      requests:
+
+        storage: 1Gi
+
+    storageClassName: standard
+
+  storageType: Durable
+
+  terminationPolicy: Delete
+
+  version: "13.13"

@@ -1,0 +1,18 @@
+apiVersion: gateway.voyagermesh.com/v1alpha1
+kind: PostgresRoute
+metadata:
+  name: pg-route
+  namespace: ace
+spec:
+  parentRefs:
+  - name: pg-gw
+    sectionName: pg-lis
+  rules:
+  - backendRefs:
+    - name: pg-demo
+      port: 5432
+      namespace: ace
+    otelCollectorRef:
+      name: otel-dep
+      namespace: ace
+      kind: Service

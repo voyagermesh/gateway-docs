@@ -1,0 +1,17 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: custom-proxy-config
+  namespace: ace
+spec:
+  mergeGateways: false # true means all the compatible gateways will be merged to one k8s resource
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        container:
+          image: shiponcs/envoy-contrib-dev:log-host-adrs     #ghcr.io/voyagermesh/envoy:v1.28.1 
+          securityContext: 
+            runAsUser: 1000
+      envoyService:
+        type: ClusterIP # defines what type of service will be used to expose the gatewaykuv
